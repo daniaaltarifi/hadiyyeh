@@ -53,6 +53,10 @@ router.get(
   "/get/productbybrands/:brand",
   BrandController.getProductBasedOnBrands
 );
+router.put("/updatebrand/:id",upload.fields([{ name: "brand_img", maxCount: 1 }]),BrandController.updateBrand);
+router.get("/get/brandsbyid/:id", BrandController.getBrandByid);
+router.delete("/delete/brand/:id", BrandController.deleteBrand);
+
   // GET SIZES
 router.get("/get/sizesbags", BrandController.sizesBags);
 router.get("/get/sizesfragrances", BrandController.sizesFragrance);

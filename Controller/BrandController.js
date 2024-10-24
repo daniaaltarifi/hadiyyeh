@@ -136,9 +136,40 @@ const getLatestProduct = async (req, res) => {
     res.json(result);
   });
 };
+const updateBrand=async(req,res)=>{
+  const {id} = req.params; 
+  const {brand_name} = req.body;
+  const brand_img =
+      req.files && req.files["brand_img"] ? req.files["brand_img"][0].filename : null;
+  const updateBrandQuery = `UPDATE brands SET brand_name =?, brand_img =? WHERE id =?`;
+  db.query(updateBrandQuery, [brand_name,brand_img, id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "Brand updated successfully" });
+  });
+}
+const getBrandByid=async(req,res)=>{
+const {id} = req.params;
+  const getBrandQuery = `SELECT * FROM brands WHERE id =?`;
+  db.query(getBrandQuery, [id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(result[0]);
+  });
+}
+const deleteBrand=async(req,res)=>{
+  const {id} = req.params;
+  const deleteBrandQuery = `DELETE FROM brands WHERE id =?`;
+  db.query(deleteBrandQuery, [id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "Brand deleted successfully" });
+  });
+
+}
 module.exports = {
   addBrand,
   getAllBrands,
+  updateBrand,
+  getBrandByid,
+  deleteBrand,
   getProductBasedOnBrands,
   // GET SIZES
   sizesBags,
