@@ -494,11 +494,17 @@ const getProducts = (req, res) => {
 const deleteProduct = (req, res) => {
   const { id } = req.params;
   const sqlDelete = "DELETE FROM product WHERE id = ? ";
+  const deleteFeedBack = "DELETE FROM feedback WHERE product_id = ?";
+  db.query(deleteFeedBack,[id],(err,result)=>{
+    if(err){
+      return res.json({ message: err.message });
+    }
+  });
   db.query(sqlDelete, [id], (err, result) => {
     if (err) {
       return res.json({ message: err.message });
     }
-    if (result.affectedRows === 0) {
+      if (result.affectedRows === 0) {
       return res
         .status(404)
         .json({ message: "No matching record found to delete" });
