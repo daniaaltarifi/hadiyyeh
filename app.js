@@ -43,6 +43,7 @@ const SliderRouter=require('./Router/SliderRouter.js')
 const WalletRouter=require('./Router/WalletRouter.js')
 const FeedbackRouter=require('./Router/FeedbackRouter.js')
 const DiscountCodeRouter=require('./Router/DiscountCodeRouter.js')
+const TypesProductRouter=require('./Router/TypesProductRouter.js')
 app.use('/product',ProductRouter)
 app.use('/giftcard',GiftCardRouter)
 app.use('/auth',LoginRouter)
@@ -55,6 +56,7 @@ app.use('/slider',SliderRouter)
 app.use('/wallet',WalletRouter)
 app.use('/feedback',FeedbackRouter)
 app.use('/discountcode',DiscountCodeRouter)
+app.use('/types',TypesProductRouter)
 app.get("/", (req, res) => {
     res.send("Welcome to Hadiyyeh! ");
   });
