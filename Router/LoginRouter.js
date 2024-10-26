@@ -10,8 +10,10 @@ router.post('/signup/post', loginController.signUp);
 router.post('/login/post',bodyParser.json(), loginController.login);
 router.post('/logout', loginController.logout)
  router.get('/getuserbyid/:id', loginController.getUserById)
+ router.get('/getalluser', loginController.getAllUser)
+ router.put('/updateuser/:id', loginController.updateUser)
+ router.delete('/deleteuser/:id', loginController.deleteUser)
 
 // router.get('/getusers', loginController.getUser)
-// router.delete('/delete/:id', loginController.deleteUser)
 
 module.exports = router

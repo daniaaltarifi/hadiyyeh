@@ -30,12 +30,25 @@ const validateDiscountCode = async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 };
-const getDiscountCode=async(req,res)=>{
-    const getcode='SELECT code, discount_percentage FROM discount_codes';
-    db.query(getcode,(err,result)=>{
-        if(err ) return res.status(500).json({ error:err.message})
-            res.json(result);
-    })
+// const getDiscountCode=async(req,res)=>{
+//     const getcode='SELECT code, discount_percentage, expiration_date FROM discount_codes';
+//     db.query(getcode,(err,result)=>{
+//         if(err ) return res.status(500).json({ error:err.message})
+//             res.json(result);
+//     })
+// }
+const getDiscountCode = async (req, res) => {
+    // Format the expiration_date to return only the date part
+    const getcode = `
+        SELECT id, code, discount_percentage, DATE_FORMAT(expiration_date, '%Y-%m-%d') AS expiration_date
+        FROM discount_codes
+    `;
+
+    db.query(getcode, (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        res.json(result); // Return the result directly
+    });
 }
 const addDiscountCode=async(req,res)=>{
     const {code, discount_percentage, expiration_date} = req.body;
@@ -53,4 +66,22 @@ const deletedCode=async(req,res)=>{
             res.json({message:'Discount Code deleted successfully'});
     })
 }
-module.exports = { validateDiscountCode,getDiscountCode ,addDiscountCode, deletedCode};
+const updatedCode=async(req,res)=>{
+    const { id } = req.params;
+    const { code, discount_percentage, expiration_date } = req.body;
+    const updatedcode=`UPDATE discount_codes SET code=?, discount_percentage=?, expiration_date=? WHERE id=?`;
+    db.query(updatedcode,[code, discount_percentage, expiration_date, id],(err,result)=>{
+        if(err ) return res.status(500).json({ error:err.message})
+            res.json({message:'Discount Code updated successfully'});
+    })
+}
+const getCodeById=async(req,res)=>{
+    const { id } = req.params;
+    const getcodeById=`SELECT id, code, discount_percentage, DATE_FORMAT(expiration_date, '%Y-%m-%d') AS expiration_date
+        FROM discount_codes WHERE id=?`;
+    db.query(getcodeById,[id],(err,result)=>{
+        if(err ) return res.status(500).json({ error:err.message})
+            res.json(result[0]);
+    })
+}
+module.exports = { validateDiscountCode,getDiscountCode ,addDiscountCode, deletedCode,updatedCode,getCodeById};

@@ -35,6 +35,7 @@ const upload = multer({
 });
 router.post('/add', upload.fields([{ name: "img", maxCount: 1 }]),SliderController.addslider)
 router.get('/',SliderController.getslider)
+router.get('/getbyid/:id',SliderController.getSliderById)
 router.put('/update/:id', upload.fields([{ name: "img", maxCount: 1 }]),SliderController.updateslider)
 router.delete('/delete/:id',SliderController.deleteslider)
 module.exports = router;
