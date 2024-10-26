@@ -190,5 +190,98 @@ const handleOrderStatusToConfirm = async (req, res) => {
     }
 };
 
+const getOrders = async (req, res) => {
+    const getOrderQuery = `
+        SELECT 
+            o.id AS order_id,
+            o.user_id,
+            o.address_id,
+            o.shipping_method,
+            o.payment_method,
+            o.total_price,
+            o.order_status,
+            u.first_name,
+            u.last_name,
+            u.email,
+            oi.id AS order_item_id,
+            oi.product_id,
+            oi.quantity,
+            oi.size,
+            oi.color,
+            oi.price,
+            oi.message,
+            oi.wrap_type,
+            oi.delivery_date,
+            p.name AS product_name,
+            a.address AS address,
+            a.addressoptional AS addressoptional,
+            a.city AS city, a.country AS country, a.phone AS phone
+        FROM orders o
+        LEFT JOIN login u ON o.user_id = u.id
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        LEFT JOIN product p ON oi.product_id = p.id
+        LEFT JOIN useraddress a ON o.address_id = a.id
+    `;
 
-module.exports ={addOrder,getorderByUserId,handleOrderStatusToConfirm}
+    try {
+        db.query(getOrderQuery, (err, results) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+
+            const orders = {};
+
+            results.forEach(row => {
+                const orderId = row.order_id;
+
+                // Initialize order if not already done
+                if (!orders[orderId]) {
+                    orders[orderId] = {
+                        order_id: orderId,
+                        user_id: row.user_id,
+                        address_id: row.address_id,
+                        shipping_method: row.shipping_method,
+                        payment_method: row.payment_method,
+                        total_price: row.total_price,
+                        order_status: row.order_status,
+                        first_name: row.first_name,
+                        last_name: row.last_name,
+                        email: row.email,
+                        address: row.address,
+                        addressoptional: row.addressoptional,
+                        city: row.city,
+                        country: row.country,
+                        phone: row.phone,
+                        items: []
+                    };
+                }
+
+                // Add item details if present
+                if (row.order_item_id) {
+                    orders[orderId].items.push({
+                        order_item_id: row.order_item_id,
+                        product_id: row.product_id,
+                        quantity: row.quantity,
+                        size: row.size,
+                        color: row.color,
+                        price: row.price,
+                        message: row.message,
+                        wrap_type: row.wrap_type,
+                        delivery_date: row.delivery_date,
+                        product_name: row.product_name
+                    });
+                }
+            });
+
+            // Send the response as an array
+            res.json(Object.values(orders));
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+
+
+module.exports ={addOrder,getorderByUserId,handleOrderStatusToConfirm,getOrders}

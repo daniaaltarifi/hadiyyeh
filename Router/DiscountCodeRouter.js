@@ -10,6 +10,9 @@ router.post('/validatecode', DiscountCodeController.validateDiscountCode);
 router.get('/getcodes', DiscountCodeController.getDiscountCode);
 router.post('/addcode', DiscountCodeController.addDiscountCode);
 router.delete('/deletecode/:id', DiscountCodeController.deletedCode);
+router.put('/updatecode/:id', DiscountCodeController.updatedCode);
+router.get('/getcodebyid/:id', DiscountCodeController.getCodeById);
+
 
 
 

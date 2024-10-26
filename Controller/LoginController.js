@@ -71,31 +71,6 @@ const logout = async (req, res) => {
     res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
     return res.json({ Status: "Logout Success" });
   };
-
-
-  // const getUserData = (req, res) => {
-  //   const token = req.cookies.token;
-  
-  //   if (!token) {
-  //     return res.status(401).json({ Error: "Unauthorized" });
-  //   }
-  
-  //   jwt.verify(token, SECRETTOKEN, (err, decoded) => {
-  //     if (err) {
-  //       return res.status(401).json({ Error: "Invalid token" });
-  //     }
-  
-  //     const sql = "SELECT first_name, last_name, email FROM login WHERE email = ?";
-  //     db.query(sql, [decoded.email], (err, results) => {
-  //       if (err) return res.status(500).json({ Error: "Database query error" });
-  //       if (results.length > 0) {
-  //         return res.json(results[0]); // Return the user data
-  //       } else {
-  //         return res.status(404).json({ Error: "User not found" });
-  //       }
-  //     });
-  //   });
-  // };
   
   const getUserById = async (req, res) => {
     const {id}=req.params
@@ -107,16 +82,36 @@ const logout = async (req, res) => {
       res.json(data);
     })
   }
-
-//   const deleteUser = async (req, res) => {
-//     const { id } = req.params;
-//     const sqlDelete = "DELETE FROM login WHERE id =?";
-//     db.query(sqlDelete, [id], (err, result) => {
-//       if (err) {
-//         console.error("Error deleting data:", err);
-//         return res.status(500).json({ message: err.message });
-//       }
-//       res.status(200).json({ message: "User Deleted successfully" });
-//     });
-//   }
-module.exports = { signUp, login, logout, getUserById };
+  const getAllUser = async (req, res) => {
+    const sqlget="SELECT id, first_name, last_name, email, role, balance FROM login";
+    db.query(sqlget,(err, data) => {
+      if (err) {
+        return res.json({ Error: "Fetching data error in server" });
+      }
+      res.json(data);
+    })
+  }
+const updateUser = async (req, res) => {
+  const {id}=req.params;
+  const {balance}=req.body;
+  const updateSql = "UPDATE login SET balance =? WHERE id =?";
+  db.query(updateSql, [balance, id], (err, result) => {
+    if (err) {
+      console.error("Error updating data:", err);
+      return res.status(500).json({ message: err.message });
+    }
+    res.status(200).json({ message: "User Updated successfully" });
+  });
+}
+  const deleteUser = async (req, res) => {
+    const { id } = req.params;
+    const sqlDelete = "DELETE FROM login WHERE id =?";
+    db.query(sqlDelete, [id], (err, result) => {
+      if (err) {
+        console.error("Error deleting data:", err);
+        return res.status(500).json({ message: err.message });
+      }
+      res.status(200).json({ message: "User Deleted successfully" });
+    });
+  }
+module.exports = { signUp, login, logout, getUserById,getAllUser,updateUser,deleteUser };

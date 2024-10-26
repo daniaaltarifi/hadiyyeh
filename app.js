@@ -10,7 +10,8 @@ const PORT = process.env.PORT || 3005;
 app.use(express.json());
 const allowedOrigins = [
   'http://localhost:5000',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'http://localhost:3001'
 ];
 
 // CORS options with a dynamic origin check

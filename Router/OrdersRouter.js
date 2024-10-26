@@ -9,6 +9,8 @@ app.use(bodyParser.json());
 router.post('/addorder', OrdersController.addOrder);
 router.get('/getorderbyid/:user_id', OrdersController.getorderByUserId);
 router.post('/confirmorrejectorder', OrdersController.handleOrderStatusToConfirm);
+router.get('/getallorders', OrdersController.getOrders);
+
 
 
 

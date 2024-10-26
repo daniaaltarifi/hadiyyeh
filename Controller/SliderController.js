@@ -62,4 +62,13 @@ const getslider = async (req, res) => {
       res.json({ message: "Slider deleted successfully" });
     });
   };
-module.exports={addslider,getslider,updateslider,deleteslider}
+  const getSliderById = async (req, res) => {
+    const { id } = req.params;
+    const getSliderQuery = `SELECT * FROM slider WHERE id=?`;
+    db.query(getSliderQuery, [id], (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(result);
+    });
+
+  }
+module.exports={addslider,getslider,updateslider,deleteslider,getSliderById}
