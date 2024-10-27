@@ -35,6 +35,7 @@ const upload = multer({
 });
 router.post('/add', upload.fields([{ name: "img", maxCount: 1 }]),WrapGiftController.addWrapGift)
 router.get('/',WrapGiftController.getWrapGift)
+router.get('/wrapgiftbyid/:id',WrapGiftController.getWrapGiftById)
 router.put('/update/:id', upload.fields([{ name: "img", maxCount: 1 }]),WrapGiftController.updateWrapGift)
 router.delete('/delete/:id',WrapGiftController.deleteWrapGift)
 module.exports = router;

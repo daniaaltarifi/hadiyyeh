@@ -17,6 +17,17 @@ const getWrapGift = async (req, res) => {
       res.json(result);
     });
   };
+  const getWrapGiftById = async (req, res) => {
+    const { id } = req.params;
+    const getWrapGiftByIdQuery = `SELECT * FROM wrapgift WHERE id =?`;
+    db.query(getWrapGiftByIdQuery, [id], (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (result.length === 0) {
+        return res.status(404).json({ message: "No matching record found" });
+      }
+      res.json(result[0]);
+    });
+  }
   const updateWrapGift = async (req, res) => {
     const { id } = req.params;
     const { wrap_type, cost } = req.body;
@@ -61,4 +72,4 @@ const getWrapGift = async (req, res) => {
       res.json({ message: "Gift wrap deleted successfully" });
     });
   };
-module.exports={addWrapGift,getWrapGift,updateWrapGift,deleteWrapGift}
+module.exports={addWrapGift,getWrapGift,updateWrapGift,deleteWrapGift,getWrapGiftById}
