@@ -136,34 +136,60 @@ const getLatestProduct = async (req, res) => {
     res.json(result);
   });
 };
-const updateBrand=async(req,res)=>{
-  const {id} = req.params; 
-  const {brand_name} = req.body;
+const updateBrand = async (req, res) => {
+  const { id } = req.params;
+  const { brand_name } = req.body;
   const brand_img =
-      req.files && req.files["brand_img"] ? req.files["brand_img"][0].filename : null;
-  const updateBrandQuery = `UPDATE brands SET brand_name =?, brand_img =? WHERE id =?`;
-  db.query(updateBrandQuery, [brand_name,brand_img, id], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "Brand updated successfully" });
+    req.files && req.files["brand_img"]
+      ? req.files["brand_img"][0].filename
+      : null;
+
+  const sqlSelect = "SELECT brand_name, brand_img FROM brands WHERE id = ?";
+
+  db.query(sqlSelect, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching current data:", err);
+      return res.status(500).json({ message: err.message });
+    }
+
+    if (results.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No matching record found to update" });
+    }
+    const existing = results[0];
+    const updatedbrand_name =
+      brand_name !== undefined ? brand_name : existing.brand_name;
+
+    const updatedbrand_Img =
+      brand_img !== null ? brand_img : existing.brand_img;
+    const updateBrandQuery = `UPDATE brands SET brand_name =?, brand_img =? WHERE id =?`;
+    db.query(
+      updateBrandQuery,
+      [updatedbrand_name, updatedbrand_Img, id],
+      (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: "Brand updated successfully" });
+      }
+    );
   });
-}
-const getBrandByid=async(req,res)=>{
-const {id} = req.params;
+};
+const getBrandByid = async (req, res) => {
+  const { id } = req.params;
   const getBrandQuery = `SELECT * FROM brands WHERE id =?`;
   db.query(getBrandQuery, [id], (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(result[0]);
   });
-}
-const deleteBrand=async(req,res)=>{
-  const {id} = req.params;
+};
+const deleteBrand = async (req, res) => {
+  const { id } = req.params;
   const deleteBrandQuery = `DELETE FROM brands WHERE id =?`;
   db.query(deleteBrandQuery, [id], (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: "Brand deleted successfully" });
   });
-
-}
+};
 module.exports = {
   addBrand,
   getAllBrands,

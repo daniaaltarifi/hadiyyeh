@@ -534,7 +534,7 @@ const handleProductTypeUpdate = (
 //       }
 //     });
 //   });
- // };
+// };
 const getProductDetails = async (req, res) => {
   const productId = req.params.id;
 
