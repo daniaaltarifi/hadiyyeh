@@ -99,6 +99,7 @@ const getorderByUserId = async (req, res) => {
     const getOrderQuery = `
         SELECT 
             o.id AS order_id,
+            DATE_FORMAT(o.created_at, '%y-%m-%d') AS created_at,
             oi.id AS order_item_id,
             oi.product_id,
             oi.quantity,
@@ -134,6 +135,7 @@ const getorderByUserId = async (req, res) => {
             if (!orderMap[orderId]) {
                 orderMap[orderId] = {
                     id: orderId,
+                    created_at: row.created_at,
                     total_price: row.total_price,
                     items: [],
                 };
@@ -200,6 +202,7 @@ const getOrders = async (req, res) => {
             o.payment_method,
             o.total_price,
             o.order_status,
+            DATE_FORMAT(o.created_at, '%y-%m-%d') AS created_at,
             u.first_name,
             u.last_name,
             u.email,
@@ -244,6 +247,7 @@ const getOrders = async (req, res) => {
                         payment_method: row.payment_method,
                         total_price: row.total_price,
                         order_status: row.order_status,
+                        created_at: row.created_at,
                         first_name: row.first_name,
                         last_name: row.last_name,
                         email: row.email,
