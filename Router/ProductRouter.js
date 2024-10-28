@@ -6,6 +6,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
+// Configure multer storage
 const customStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "images"); // Destination folder
@@ -17,8 +18,11 @@ const customStorage = multer.diskStorage({
 
     // Check if the file already exists
     if (fs.existsSync(filePath)) {
-      // If file exists, return the existing filename
-      cb(null, filename);
+      // If file exists, append a timestamp to the filename
+      const timestamp = Date.now();
+      const ext = path.extname(filename);
+      const baseName = path.basename(filename, ext);
+      cb(null, `${baseName}-${timestamp}${ext}`);
     } else {
       // If file doesn't exist, save it with the given filename
       cb(null, filename);
@@ -31,40 +35,42 @@ const upload = multer({
   storage: customStorage,
   fileFilter: (req, file, cb) => {
     // Optionally, you can filter file types if needed
-    cb(null, true);
+    const allowedTypes = /jpg|jpeg|png|gif/; // Example: allow specific image types
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      return cb(null, true);
+    }
+    cb(new Error("Only images are allowed"));
   },
 });
-router.post("/add", upload.array("img", 5), ProductController.addProduct);
-// router.post('/add', upload.fields([{ name: 'brand_img', maxCount: 1 },{ name: 'img', maxCount: 5 } ]), ProductController.addProduct);
 
+// Product routes
+router.post("/add", upload.array("img", 5), ProductController.addProduct);
 router.get("/:id", ProductController.getProductDetails);
 router.get("/bymaintype/:main_product_type", ProductController.getProducts);
-router.get("/bysubtype/subtype", ProductController.getProductBysubType);
+router.get("/bysubtype/:subtype", ProductController.getProductBysubType);
 router.delete("/delete/:id", ProductController.deleteProduct);
+router.put("/update/:id", upload.array("img", 5), ProductController.updateProduct);
 
-//  BRAND CONTROLLER
-router.post(
-  "/addbrand",
-  upload.fields([{ name: "brand_img", maxCount: 1 }]),
-  BrandController.addBrand
-);
+// Brand routes
+router.post("/addbrand", upload.fields([{ name: "brand_img", maxCount: 1 }]), BrandController.addBrand);
 router.get("/get/brands", BrandController.getAllBrands);
-router.get(
-  "/get/productbybrands/:brand",
-  BrandController.getProductBasedOnBrands
-);
-router.put("/updatebrand/:id",upload.fields([{ name: "brand_img", maxCount: 1 }]),BrandController.updateBrand);
+router.get("/get/productbybrands/:brand", BrandController.getProductBasedOnBrands);
+router.put("/updatebrand/:id", upload.fields([{ name: "brand_img", maxCount: 1 }]), BrandController.updateBrand);
 router.get("/get/brandsbyid/:id", BrandController.getBrandByid);
 router.delete("/delete/brand/:id", BrandController.deleteBrand);
 
-  // GET SIZES
+// Get sizes
 router.get("/get/sizesbags", BrandController.sizesBags);
 router.get("/get/sizesfragrances", BrandController.sizesFragrance);
-  // GET SEASONS
+
+// Get seasons
 router.get("/get/season", BrandController.getSeasons);
 router.get("/get/productbyseason/:season", BrandController.getProductBySeasons);
-//GET AllPRODUCT
 
-router.get("/get/allproducts",BrandController.getAllProducts)
-router.get("/get/latestproducts",BrandController.getLatestProduct)
+// Get all products
+router.get("/get/allproducts", BrandController.getAllProducts);
+router.get("/get/latestproducts", BrandController.getLatestProduct);
+
 module.exports = router;

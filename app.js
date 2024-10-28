@@ -15,20 +15,19 @@ const allowedOrigins = [
   'http://localhost:5173'
 ];
 
-// CORS options with a dynamic origin check
+
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or Postman)
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true, // Allow credentials
+  credentials: true, 
 };
 
-// Use the CORS middleware
+
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -46,6 +45,11 @@ const WalletRouter=require('./Router/WalletRouter.js')
 const FeedbackRouter=require('./Router/FeedbackRouter.js')
 const DiscountCodeRouter=require('./Router/DiscountCodeRouter.js')
 const TypesProductRouter=require('./Router/TypesProductRouter.js')
+const ProductTypeIdRouter =require('./Router/ProductTypeIdRouter.js')
+const FragranceTypeIdRouter =require('./Router/FragranceTypeIdRouter.js')
+const BagTypeIdRouter =require('./Router/BagTypeIdRouter.js')
+
+
 app.use('/product',ProductRouter)
 app.use('/giftcard',GiftCardRouter)
 app.use('/auth',LoginRouter)
@@ -59,6 +63,13 @@ app.use('/wallet',WalletRouter)
 app.use('/feedback',FeedbackRouter)
 app.use('/discountcode',DiscountCodeRouter)
 app.use('/types',TypesProductRouter)
+app.use('/producttypeid',ProductTypeIdRouter)
+app.use('/fragrancetypeid',FragranceTypeIdRouter)
+app.use('/bagtypeid',BagTypeIdRouter)
+
+
+
+
 app.get("/", (req, res) => {
     res.send("Welcome to Hadiyyeh! ");
   });
