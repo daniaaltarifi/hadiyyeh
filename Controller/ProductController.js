@@ -22,6 +22,7 @@ const addProduct = (req, res) => {
   } = req.body;
   // Handle image files
   const images = req.files; // Get all uploaded images
+  console.log(req.body)
   // Insert into product table
   const productQuery = `
         INSERT INTO product (name, description, sale, main_product_type, product_type, season, brandID, instock)
