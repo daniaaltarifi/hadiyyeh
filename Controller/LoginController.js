@@ -47,8 +47,8 @@ const login = async (req, res) => {
         (err, response) => {
           if (err) return res.json({ Error: "Password compare error" });
           if (response) {
-            const {id, first_name, last_name } = data[0];
-            const token = jwt.sign({ first_name, last_name }, SECRETTOKEN, { expiresIn: "1d" });
+            const {id, first_name, last_name, role } = data[0];
+            const token = jwt.sign({ first_name, last_name,role}, SECRETTOKEN, { expiresIn: "1d" });
           // Set the token in a cookie
           res.cookie("token", token, {
             httpOnly: true,
@@ -56,7 +56,7 @@ const login = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
             sameSite: "Strict",
           });          
-            return res.json({ Status: "Login Succses",user: {id, first_name, last_name, email: req.body.email }  });
+            return res.json({ Status: "Login Succses",token,user: {id, first_name, last_name, role, email: req.body.email }  });
           } else {
             return res.json({ Status: "Failed", Error: "Incorect Password" });
           }
