@@ -99,7 +99,7 @@ const getorderByUserId = async (req, res) => {
     const getOrderQuery = `
         SELECT 
             o.id AS order_id,
-            DATE_FORMAT(o.created_at, '%y-%m-%d') AS created_at,
+            DATE_FORMAT(o.created_at, '%Y-%m-%d') AS created_at,
             oi.id AS order_item_id,
             oi.product_id,
             oi.quantity,
@@ -160,6 +160,37 @@ const getorderByUserId = async (req, res) => {
 }
 
 // Confirm Payment Function
+// const handleOrderStatusToConfirm = async (req, res) => {
+//     const { order_id, status } = req.body;
+
+//     if (!order_id || !status) {
+//         return res.status(400).json({ error: "Order ID and status are required" });
+//     }
+
+//     try {
+//         if (status === 'Confirmed') {
+//             const updateOrderStatusQuery = `UPDATE orders SET order_status = 'Confirmed' WHERE id = ?`;
+//             await db.promise().query(updateOrderStatusQuery, [order_id]);
+//             return res.json({ message: "Order confirmed successfully" });
+//         } else if (status === 'Rejected') {
+//             await db.promise().query('START TRANSACTION');
+
+//             const deleteOrderItemsQuery = `DELETE FROM order_items WHERE order_id = ?`;
+//             await db.promise().query(deleteOrderItemsQuery, [order_id]);
+
+//             const deleteOrderQuery = `DELETE FROM orders WHERE id = ?`;
+//             await db.promise().query(deleteOrderQuery, [order_id]);
+
+//             await db.promise().query('COMMIT');
+//             return res.json({ message: "Order rejected and removed successfully" });
+//         } else {
+//             return res.status(400).json({ error: "Invalid status. Use 'Confirmed' or 'Rejected'." });
+//         }
+//     } catch (err) {
+//         await db.promise().query('ROLLBACK');  // Rollback transaction in case of error
+//         return res.status(500).json({ error: err.message });
+//     }
+// };
 const handleOrderStatusToConfirm = async (req, res) => {
     const { order_id, status } = req.body;
 
@@ -172,26 +203,18 @@ const handleOrderStatusToConfirm = async (req, res) => {
             const updateOrderStatusQuery = `UPDATE orders SET order_status = 'Confirmed' WHERE id = ?`;
             await db.promise().query(updateOrderStatusQuery, [order_id]);
             return res.json({ message: "Order confirmed successfully" });
-        } else if (status === 'Rejected') {
-            await db.promise().query('START TRANSACTION');
-
-            const deleteOrderItemsQuery = `DELETE FROM order_items WHERE order_id = ?`;
-            await db.promise().query(deleteOrderItemsQuery, [order_id]);
-
-            const deleteOrderQuery = `DELETE FROM orders WHERE id = ?`;
-            await db.promise().query(deleteOrderQuery, [order_id]);
-
-            await db.promise().query('COMMIT');
-            return res.json({ message: "Order rejected and removed successfully" });
+        } else if (status === 'Canceled') {
+            const updateOrderStatusQuery = `UPDATE orders SET order_status = 'Canceled' WHERE id = ?`;
+            await db.promise().query(updateOrderStatusQuery, [order_id]);
+            return res.json({ message: "Order Canceled successfully" });
         } else {
-            return res.status(400).json({ error: "Invalid status. Use 'Confirmed' or 'Rejected'." });
+            return res.status(400).json({ error: "Invalid status. Use 'Confirmed' or 'Canceled'." });
         }
     } catch (err) {
         await db.promise().query('ROLLBACK');  // Rollback transaction in case of error
         return res.status(500).json({ error: err.message });
     }
 };
-
 const getOrders = async (req, res) => {
     const getOrderQuery = `
         SELECT 
@@ -202,7 +225,7 @@ const getOrders = async (req, res) => {
             o.payment_method,
             o.total_price,
             o.order_status,
-            DATE_FORMAT(o.created_at, '%y-%m-%d') AS created_at,
+            DATE_FORMAT(o.created_at, '%Y-%m-%d') AS created_at,
             u.first_name,
             u.last_name,
             u.email,
