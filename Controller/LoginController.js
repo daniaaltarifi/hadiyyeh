@@ -83,7 +83,7 @@ const logout = async (req, res) => {
     })
   }
   const getAllUser = async (req, res) => {
-    const sqlget="SELECT id, first_name, last_name, email, role, balance FROM login";
+    const sqlget="SELECT id, first_name, last_name, email, role, balance, created_at FROM login";
     db.query(sqlget,(err, data) => {
       if (err) {
         return res.json({ Error: "Fetching data error in server" });
