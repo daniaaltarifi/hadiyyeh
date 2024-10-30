@@ -22,6 +22,7 @@ const addProduct = (req, res) => {
   } = req.body;
   // Handle image files
   const images = req.files; // Get all uploaded images
+  console.log(req.body)
   // Insert into product table
   const productQuery = `
         INSERT INTO product (name, description, sale, main_product_type, product_type, season, brandID, instock)
@@ -183,6 +184,7 @@ const handleProductTypeInsertion = (
         const lastFragranceId = fragranceResult.insertId; 
         if (Fragrancevariants && Fragrancevariants.length > 0) {
           const variantQueries = Fragrancevariants.map((fragvariant) => {
+            console.log('heloooooooooooo')
             return new Promise((resolve, reject) => {
               const variantQuery = `INSERT INTO fragrancevariants (FragranceID, Size, Available, before_price, after_price) VALUES (?, ?, ?, ?, ?)`;
               db.query(
@@ -325,7 +327,7 @@ const handleProductTypeUpdate = (
       );
     });
   } else if (main_product_type === "Fragrance") {
-    const checkFragranceTypeQuery = `SELECT * FROM fragranceTypes WHERE FragranceTypeID = ?`;
+    const checkFragranceTypeQuery = `SELECT * FROM fragrancetypes WHERE FragranceTypeID = ?`;
     db.query(checkFragranceTypeQuery, [FragranceTypeID], (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
       if (results.length === 0) {
