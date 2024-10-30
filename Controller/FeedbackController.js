@@ -1,8 +1,8 @@
 const db = require("../config.js");
 const addFeedback=async(req,res)=>{
-    const { product_id, user_id, message }=req.body;
-    const addfeed=`INSERT INTO feedback(product_id, user_id, message) VALUES(?,?,?)`
-    db.query(addfeed,[product_id, user_id, message],(err,result)=>{
+    const { product_id, user_id, message,rating }=req.body;
+    const addfeed=`INSERT INTO feedback(product_id, user_id, message, rating) VALUES(?,?,?,?)`
+    db.query(addfeed,[product_id, user_id, message,rating],(err,result)=>{
         if(err) return res.status(500).json({error:err.message});
         res.json({message:"Feedback added  successfully"});
     });
