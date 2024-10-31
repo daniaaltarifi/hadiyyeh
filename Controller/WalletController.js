@@ -284,7 +284,7 @@ const decreseBalance= async(req,res)=>{
 }
 const getPaymentTable = async (req, res) => {
     const query = `SELECT pa.id, pa.userId, pa.amount, pa.status, pa.paymentMethod, 
-                          DATE_FORMAT(pa.created_at, '%y-%m-%d') AS created_at, 
+                          DATE_FORMAT(pa.created_at, '%Y-%m-%d') AS created_at, 
                           us.first_name, us.last_name, us.email
                    FROM payments AS pa
                    LEFT JOIN login AS us ON us.id = pa.userId`;
