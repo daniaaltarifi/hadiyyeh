@@ -92,10 +92,15 @@ const getAllProducts = (req, res) => {
   SELECT 
     p.id,
     p.name, 
+    p.description,
     p.sale, 
+    p.main_product_type,
+    p.product_type,
+    p.season,
     p.instock,
     p.brandID, 
     br.brand_name,
+    p.updated_at,
     MIN(pi.img) AS first_image,
     COALESCE(MIN(bv.after_price), MIN(fv.after_price), MIN(w.after_price)) AS after_price,
     COALESCE(MIN(bv.before_price), MIN(fv.before_price), MIN(w.before_price)) AS before_price
