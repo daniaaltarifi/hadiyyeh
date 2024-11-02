@@ -541,6 +541,7 @@ const getProducts = (req, res) => {
   const { main_product_type } = req.params;
 
   const productQuery = `
+
     SELECT 
       p.id, 
       p.name, 
@@ -563,6 +564,31 @@ const getProducts = (req, res) => {
     LEFT JOIN brands br ON p.BrandID = br.id
     WHERE p.main_product_type = ?
     GROUP BY p.id`;
+
+      SELECT 
+          p.id, 
+          p.name, 
+          p.description,
+          p.main_product_type, 
+          p.sale, 
+          p.instock,
+          fv.size,
+          br.brand_name,
+          (SELECT img FROM product_images WHERE ProductID = p.id LIMIT 1) AS first_image,
+          (SELECT img FROM product_images WHERE ProductID = p.id ORDER BY id LIMIT 1 OFFSET 1) AS second_image,
+          COALESCE(MIN(bv.Size), MIN(fv.Size)) AS size,
+          COALESCE(MIN(bv.after_price), MIN(fv.after_price), MIN(w.after_price)) AS after_price,
+          COALESCE(MIN(bv.before_price), MIN(fv.before_price), MIN(w.before_price)) AS before_price
+      FROM product p
+      LEFT JOIN bags b ON p.id = b.ProductID
+      LEFT JOIN bagvariants bv ON b.BagID = bv.BagID
+      LEFT JOIN fragrances f ON p.id = f.ProductID  
+      LEFT JOIN fragrancevariants fv ON f.FragranceID = fv.FragranceID
+      LEFT JOIN watches w ON p.id = w.ProductID
+      LEFT JOIN brands br ON p.BrandID = br.id
+      WHERE p.main_product_type = ?
+      GROUP BY p.id`;
+
 
   db.query(productQuery, [main_product_type], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
