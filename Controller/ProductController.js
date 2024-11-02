@@ -593,7 +593,6 @@ const getProducts = (req, res) => {
       SELECT 
           p.id, 
           p.name, 
-          p.before_price,
           p.description,
           p.main_product_type, 
           p.sale, 
