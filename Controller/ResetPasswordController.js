@@ -33,7 +33,7 @@ const forgotPassword = async (req, res) => {
     const token = jwt.sign({ email }, SECRETTOKEN, { expiresIn: "1h" });
 
     // Construct the reset link
-    const resetLink = `http://localhost:3000/en/resetpassword?token=${token}`;
+    const resetLink = `https://kassel.icu/en/resetpassword?token=${token}`;
 const to= email;
 const subject="Reset Password";
 const text = `Requested For Reset Password`;
