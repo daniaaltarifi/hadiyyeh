@@ -33,7 +33,7 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(express.static("images"));
 const ProductRouter=require('./Router/ProductRouter.js')
-const GiftCardRouter=require('./Router/GiftCardRouter.js')
+// const GiftCardRouter=require('./Router/GiftCardRouter.js')
 const LoginRouter=require('./Router/LoginRouter.js')
 const UserAddressRouter=require('./Router/UserAddressRouter.js')
 const CartRouter=require('./Router/CartRouter.js')
@@ -51,7 +51,7 @@ const BagTypeIdRouter =require('./Router/BagTypeIdRouter.js')
 
 
 app.use('/product',ProductRouter)
-app.use('/giftcard',GiftCardRouter)
+// app.use('/giftcard',GiftCardRouter)
 app.use('/auth',LoginRouter)
 app.use('/address',UserAddressRouter)
 app.use('/cart',CartRouter)

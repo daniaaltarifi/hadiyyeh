@@ -32,16 +32,10 @@ const customStorage = multer.diskStorage({
 
 // Middleware to handle file upload
 const upload = multer({
-  storage: customStorage,
+   storage: customStorage,
   fileFilter: (req, file, cb) => {
     // Optionally, you can filter file types if needed
-    const allowedTypes = /jpg|jpeg|png|gif/; // Example: allow specific image types
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      return cb(null, true);
-    }
-    cb(new Error("Only images are allowed"));
+    cb(null, true);
   },
 });
 
@@ -72,5 +66,16 @@ router.get("/get/productbyseason/:season", BrandController.getProductBySeasons);
 // Get all products
 router.get("/get/allproducts", BrandController.getAllProducts);
 router.get("/get/latestproducts", BrandController.getLatestProduct);
+
+router.get("/getproductbyid/:id",ProductController.getProductById)
+router.put('/updateFragranceVariants/:id', ProductController.updateFragranceVariant);
+router.put("/updatebagsvariants/:id",ProductController.updateBagVariants)
+router.get("/getfragrancevariantsbyid/:id",ProductController.getFragranceVariantsById)
+router.get("/getbagsvariansbyid/:id", ProductController.getBagVariantsById)
+router.delete('/deletefragrancevariant/:variantFragranceID', ProductController.deleteFragranceVariantByFragranceID);
+router.delete("/deletebagsvariants/:VariantID", ProductController.deleteBagVariantByVariantID)
+router.get("/variants/getAllProductsWithVariantsCMS",ProductController.getAllProductsWithVariantsCMS)
+router.delete("/deleteProductImageById/:id", ProductController.deleteProductImage)
+
 
 module.exports = router;
