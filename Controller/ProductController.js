@@ -156,13 +156,12 @@ const handleProductTypeInsertion = (
     res.status(400).json({ error: "Invalid main product type." });
   }
 };
-
 const updateProduct = (req, res) => {
   const { id } = req.params;
   const {
     name,
     description,
-    sale,
+    sale,  
     main_product_type,
     product_type,
     season,
@@ -174,11 +173,14 @@ const updateProduct = (req, res) => {
     instock,
     variants,
   } = req.body;
+  const files = req.files;  
 
+  
   if (!id || !name || !main_product_type || !instock || !brandID) {
     return res.status(400).json({ error: "Missing required fields." });
   }
 
+  
   const checkBrandQuery = `SELECT * FROM brands WHERE id = ?`;
   db.query(checkBrandQuery, [brandID], (err, results) => {
     if (err) {
@@ -189,65 +191,50 @@ const updateProduct = (req, res) => {
       return res.status(400).json({ error: "Invalid brandID." });
     }
 
-    const productQuery = `
-      UPDATE product
-      SET
-        name = ?,
-        description = ?,
-        sale = ?,
-        main_product_type = ?,
-        product_type = ?,
-        season = ?,
-        brandID = ?,
-        instock = ?
+    const saleValue = sale ? "Yes" : "No"; 
+
+    const productQuery = `UPDATE product 
+      SET name = ?, description = ?, sale = ?, main_product_type = ?, product_type = ?, season = ?, brandID = ?, instock = ? 
       WHERE id = ?`;
 
-    db.query(
-      productQuery,
-      [
-        name,
-        description,
-        sale,
-        main_product_type,
-        product_type,
-        season,
-        brandID,
-        instock === "Yes" ? "yes" : "no",
-        id,
-      ],
-      (err) => {
-        if (err) {
-          console.error("Database update error:", err);
-          return res.status(500).json({ error: err.message });
-        }
-
-        console.log("Updated product:", {
-          id,
-          name,
-          description,
-          sale,
-          main_product_type,
-          product_type,
-          season,
-          brandID,
-          instock,
-        });
-
-        handleProductTypeUpdate(
-          req,
-          main_product_type,
-          id,
-          BagTypeID,
-          BagVariants,
-          WatchTypeID,
-          FragranceTypeID,
-          variants,
-          res
-        );
+    db.query(productQuery, [
+      name, description, saleValue, main_product_type, product_type, season, brandID, instock === "Yes" ? "yes" : "no", id
+    ], (err) => {
+      if (err) {
+        console.error("Database update error:", err);
+        return res.status(500).json({ error: err.message });
       }
-    );
+
+      console.log("Updated product:", { id, name, description, saleValue, main_product_type, product_type, season, brandID, instock });
+
+      if (files && files.length > 0) {
+        const insertImagesQuery = `INSERT INTO product_images (ProductID, img) VALUES ?`;
+        const imagePaths = files.map(file => [`${file.path}`]);
+
+        db.query(insertImagesQuery, [imagePaths], (err) => {
+          if (err) {
+            console.error("Error inserting images:", err);
+            return res.status(500).json({ error: err.message });
+          }
+
+          console.log("Images added successfully.");
+        });
+      }
+      handleProductTypeUpdate(
+        req,
+        main_product_type,
+        id,
+        BagTypeID,
+        BagVariants,
+        WatchTypeID,
+        FragranceTypeID,
+        variants,
+        res
+      );
+    });
   });
 };
+
 
 const handleProductTypeUpdate = (
   req,
@@ -264,6 +251,7 @@ const handleProductTypeUpdate = (
     if (!BagTypeID) {
       return res.status(400).json({ error: "BagTypeID is required." });
     }
+
     const updateBagQuery = `UPDATE bags SET BagTypeID = ? WHERE ProductID = ?`;
     db.query(updateBagQuery, [BagTypeID, productId], (err) => {
       if (err) {
@@ -351,7 +339,8 @@ const handleProductTypeUpdate = (
           .json({ message: "Product updated as Bag without variants." });
       }
     });
-  } else if (main_product_type === "Fragrance") {
+  }
+  else if (main_product_type === "Fragrance") {
     if (!FragranceTypeID) {
       return res.status(400).json({ error: "FragranceTypeID is required." });
     }
@@ -361,6 +350,7 @@ const handleProductTypeUpdate = (
         console.error("Error updating fragrances:", err);
         return res.status(500).json({ error: err.message });
       }
+
       console.log("Updated fragrance type for product:", {
         productId,
         FragranceTypeID,
@@ -414,9 +404,7 @@ ON DUPLICATE KEY UPDATE
   Size = VALUES(Size),
   Available = VALUES(Available),
   before_price = VALUES(before_price),
-  after_price = VALUES(after_price);
-
-                  `;
+  after_price = VALUES(after_price);`;
 
                 db.query(
                   variantQuery,
@@ -463,12 +451,12 @@ ON DUPLICATE KEY UPDATE
     const { available, before_price, after_price } = req.body;
 
     const updateWatchQuery = `
-      UPDATE watches
-      SET
-        WatchTypeID = ?,
-        Available = ?,
-        before_price = ?,
-        after_price = ?
+      UPDATE watches 
+      SET 
+        WatchTypeID = ?, 
+        Available = ?, 
+        before_price = ?, 
+        after_price = ? 
       WHERE ProductID = ?`;
 
     db.query(
@@ -480,10 +468,10 @@ ON DUPLICATE KEY UPDATE
           return res.status(500).json({ error: err.message });
         }
 
-        console.log("Updated watch for product:", { productId, WatchTypeID });
         res.status(200).json({ message: "Product updated as Watch." });
       }
     );
+
   } else {
       console.log(req.body); 
       return res.status(400).json({ error: "WatchTypeID is required." });
@@ -853,6 +841,7 @@ const getAllProductsWithVariantsCMS = async (req, res) => {
         DATE_FORMAT(p.updated_at, '%Y-%m-%d %H:%i:%s') AS updatedDate,  
         p.product_type AS productType,
         p.season AS season,
+        p.instock AS instock,
         p.sale AS sale,  
         b.BagID AS BagID,
         bv.Color AS bagColor,
@@ -907,6 +896,7 @@ const getAllProductsWithVariantsCMS = async (req, res) => {
             main_product_type: product.main_product_type,
             product_type: product.productType,
             season: product.season,
+            instock: product.instock,
             sale: product.sale,
             updated_at: product.updatedDate,
             description: product.description,
@@ -1171,7 +1161,7 @@ const getProductById = (req, res) => {
         return res.status(500).json({ error: "Error fetching images: " + err.message });
       }
 
-      const images = imageResults.map((image, index) => ({
+      const images = imageResults.map((image) => ({
         id: image.id,  
         img: image.img  
       }));
