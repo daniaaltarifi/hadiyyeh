@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const WrapGiftController = require("../Controller/WrapGiftController");
-const multer = require("../../Config/Multer");
+const multer = require("../Config/Multer");
 
 
 router.post('/add', multer.fields([{ name: "img", maxCount: 1 }]),WrapGiftController.addWrapGift)

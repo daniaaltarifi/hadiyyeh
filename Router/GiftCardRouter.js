@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const GiftCardController = require("../Controller/GiftCardController.js");
-const multer = require("../../Config/Multer.js");
+const multer = require("../Config/Multer.js");
 
 
 router.post('/add', multer.fields([{ name: "img", maxCount: 1 }]),GiftCardController.addGiftCard)

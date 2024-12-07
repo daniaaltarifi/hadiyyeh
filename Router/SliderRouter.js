@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const SliderController = require("../Controller/SliderController.js");
-const multer = require("../../Config/Multer.js");
+const multer = require("../Config/Multer.js");
 
 
 
