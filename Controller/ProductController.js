@@ -26,11 +26,10 @@ const addProduct = (req, res) => {
     before_price,
     after_price,
     instock,
-    Fragrancevariants
+    Fragrancevariants,
   } = req.body;
 
   const images = req.files;
-  // Check if the brandID exists
   checkBrandIDExists(brandID, (err, exists) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!exists) {
@@ -57,7 +56,7 @@ const addProduct = (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const lastProductId = result.insertId;
-        console.log(lastProductId)
+        console.log(lastProductId);
         if (images && images.length > 0) {
           const imageQueries = images.map((image) => {
             return new Promise((resolve, reject) => {
@@ -175,7 +174,6 @@ const handleProductTypeInsertion = (
 
         const lastFragranceId = fragranceResult.insertId;
         if (FragranceVariants && FragranceVariants.length > 0) {
-          
           const variantQueries = FragranceVariants.map((variant) => {
             return new Promise((resolve, reject) => {
               const variantQuery = `
@@ -213,11 +211,11 @@ const handleProductTypeInsertion = (
       }
     );
   } else if (main_product_type === "Watch") {
-    const ProductID  = lastProductId;
+    const ProductID = lastProductId;
     const insertWatchQuery = `INSERT INTO watches ( WatchTypeId, Available, before_price, after_price,ProductID) VALUES (?, ?, ?, ?,?)`;
     db.query(
       insertWatchQuery,
-      [ WatchTypeId,available,before_price,after_price,ProductID],
+      [WatchTypeId, available, before_price, after_price, ProductID],
       (err, watchResult) => {
         if (err) return res.status(500).json({ error: err.message });
 
@@ -229,12 +227,31 @@ const handleProductTypeInsertion = (
   }
 };
 
+
+
+const multer = require('multer');
+const path = require('path');
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); 
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); 
+  },
+});
+
+const upload = multer({ storage: storage });
+
+
+
+
+
 const updateProduct = (req, res) => {
   const { id } = req.params;
   const {
     name,
     description,
-    sale,
+    sale,  
     main_product_type,
     product_type,
     season,
@@ -244,12 +261,16 @@ const updateProduct = (req, res) => {
     WatchTypeID,
     FragranceTypeID,
     instock,
+    variants,
   } = req.body;
+  const files = req.files;  
 
+  
   if (!id || !name || !main_product_type || !instock || !brandID) {
     return res.status(400).json({ error: "Missing required fields." });
   }
 
+  
   const checkBrandQuery = `SELECT * FROM brands WHERE id = ?`;
   db.query(checkBrandQuery, [brandID], (err, results) => {
     if (err) {
@@ -260,59 +281,60 @@ const updateProduct = (req, res) => {
       return res.status(400).json({ error: "Invalid brandID." });
     }
 
-    const productQuery = `
-      UPDATE product 
-      SET 
-        name = ?, 
-        description = ?, 
-        sale = ?, 
-        main_product_type = ?, 
-        product_type = ?, 
-        season = ?, 
-        brandID = ?, 
-          instock = ? 
-        WHERE id = ?`;
+    const saleValue = sale ? "Yes" : "No"; 
 
-    db.query(
-      productQuery,
-      [
-        name,
-        description,
-        sale,
-        main_product_type,
-        product_type,
-        season,
-        brandID,
-        instock === "Yes" ? "yes" : "no",
-        id,
-      ],
-      (err) => {
-        if (err) {
-          console.error("Database update error:", err);
-          return res.status(500).json({ error: err.message });
-        }
+    const productQuery = `UPDATE product 
+      SET name = ?, description = ?, sale = ?, main_product_type = ?, product_type = ?, season = ?, brandID = ?, instock = ? 
+      WHERE id = ?`;
 
-        handleProductTypeUpdate(
-          main_product_type,
-          id,
-          BagTypeID,
-          BagVariants,
-          WatchTypeID,
-          FragranceTypeID,
-          res
-        );
+    db.query(productQuery, [
+      name, description, saleValue, main_product_type, product_type, season, brandID, instock === "Yes" ? "yes" : "no", id
+    ], (err) => {
+      if (err) {
+        console.error("Database update error:", err);
+        return res.status(500).json({ error: err.message });
       }
-    );
+
+      console.log("Updated product:", { id, name, description, saleValue, main_product_type, product_type, season, brandID, instock });
+
+      if (files && files.length > 0) {
+        const insertImagesQuery = `INSERT INTO product_images (ProductID, img) VALUES ?`;
+        const imagePaths = files.map(file => [`${file.path}`]);
+
+        db.query(insertImagesQuery, [imagePaths], (err) => {
+          if (err) {
+            console.error("Error inserting images:", err);
+            return res.status(500).json({ error: err.message });
+          }
+
+          console.log("Images added successfully.");
+        });
+      }
+      handleProductTypeUpdate(
+        req,
+        main_product_type,
+        id,
+        BagTypeID,
+        BagVariants,
+        WatchTypeID,
+        FragranceTypeID,
+        variants,
+        res
+      );
+    });
   });
 };
 
+
 const handleProductTypeUpdate = (
+  req,
   main_product_type,
   productId,
   BagTypeID,
   BagVariants,
   WatchTypeID,
   FragranceTypeID,
+  variants,
   res
 ) => {
   if (main_product_type === "Bag") {
@@ -326,6 +348,8 @@ const handleProductTypeUpdate = (
         console.error("Error updating bags:", err);
         return res.status(500).json({ error: err.message });
       }
+
+      console.log("Updated bag type for product:", { productId, BagTypeID });
 
       if (BagVariants && Array.isArray(BagVariants) && BagVariants.length > 0) {
         const variantQueries = BagVariants.map((variant) => {
@@ -352,14 +376,14 @@ const handleProductTypeUpdate = (
               }
 
               const variantQuery = `
-                            INSERT INTO bagvariants (BagID, Size, Available, before_price, after_price, color)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                            ON DUPLICATE KEY UPDATE
-                                Size = VALUES(Size),
-                                Available = VALUES(Available),
-                                before_price = VALUES(before_price),
-                                after_price = VALUES(after_price),
-                                color = VALUES(color)`;
+                INSERT INTO bagvariants (BagID, Size, Available, before_price, after_price, Color)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                  Size = VALUES(Size),
+                  Available = VALUES(Available),
+                  before_price = VALUES(before_price),
+                  after_price = VALUES(after_price),
+                  Color = VALUES(Color)`;
 
               db.query(
                 variantQuery,
@@ -369,13 +393,14 @@ const handleProductTypeUpdate = (
                   variant.available,
                   variant.before_price,
                   variant.after_price,
-                  variant.color, // Adding color to the query
+                  variant.Color,
                 ],
                 (err) => {
                   if (err) {
                     console.error("Error updating bag variants:", err);
                     reject(err);
                   } else {
+                    console.log("Updated bag variant:", variant);
                     resolve();
                   }
                 }
@@ -400,7 +425,8 @@ const handleProductTypeUpdate = (
           .json({ message: "Product updated as Bag without variants." });
       }
     });
-  } else if (main_product_type === "Fragrance") {
+  }
+  else if (main_product_type === "Fragrance") {
     if (!FragranceTypeID) {
       return res.status(400).json({ error: "FragranceTypeID is required." });
     }
@@ -412,34 +438,60 @@ const handleProductTypeUpdate = (
         return res.status(500).json({ error: err.message });
       }
 
-      if (BagVariants && Array.isArray(BagVariants) && BagVariants.length > 0) {
-        const variantQueries = BagVariants.map((variant) => {
+      console.log("Updated fragrance type for product:", {
+        productId,
+        FragranceTypeID,
+      });
+
+      if (variants && Array.isArray(variants) && variants.length > 0) {
+        const variantQueries = variants.map((variant) => {
           return new Promise((resolve, reject) => {
-            const variantQuery = `
-                INSERT INTO fragrancevariants (FragranceID, Size, Available, before_price, after_price)
-                VALUES (?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                  Size = ?, Available = ?, before_price = ?, after_price = ?`;
+            const checkFragranceQuery = `SELECT COUNT(*) AS count FROM fragrances WHERE FragranceID = ?`;
             db.query(
-              variantQuery,
-              [
-                variant.FragranceID,
-                variant.size,
-                variant.available,
-                variant.before_price,
-                variant.after_price,
-                variant.size,
-                variant.available,
-                variant.before_price,
-                variant.after_price,
-              ],
-              (err) => {
+              checkFragranceQuery,
+              [variant.FragranceID],
+              (err, results) => {
                 if (err) {
-                  console.error("Error updating fragrance variants:", err);
-                  reject(err);
-                } else {
-                  resolve();
+                  console.error("Error checking fragrance existence:", err);
+                  return reject(err);
                 }
+
+                if (results[0].count === 0) {
+                  console.error(
+                    "FragranceID does not exist:",
+                    variant.FragranceID
+                  );
+                  return reject(new Error("Invalid FragranceID."));
+                }
+
+                const variantQuery = `
+               INSERT INTO fragrancevariants (FragranceID, Size, Available, before_price, after_price)
+VALUES (?, ?, ?, ?, ?)
+ON DUPLICATE KEY UPDATE
+  Size = VALUES(Size),
+  Available = VALUES(Available),
+  before_price = VALUES(before_price),
+  after_price = VALUES(after_price);`;
+
+                db.query(
+                  variantQuery,
+                  [
+                    variant.FragranceID,
+                    variant.size,
+                    variant.available,
+                    variant.before_price,
+                    variant.after_price,
+                  ],
+                  (err) => {
+                    if (err) {
+                      console.error("Error updating fragrance variants:", err);
+                      reject(err);
+                    } else {
+                      console.log("Updated fragrance variant:", variant);
+                      resolve();
+                    }
+                  }
+                );
               }
             );
           });
@@ -459,21 +511,339 @@ const handleProductTypeUpdate = (
     });
   } else if (main_product_type === "Watch") {
     if (!WatchTypeID) {
+      console.log(req.body);
       return res.status(400).json({ error: "WatchTypeID is required." });
     }
-    const updateWatchQuery = `UPDATE watches SET WatchTypeID = ? WHERE ProductID = ?`;
-    db.query(updateWatchQuery, [WatchTypeID, productId], (err) => {
+
+    const { available, before_price, after_price } = req.body;
+
+    const updateWatchQuery = `
+      UPDATE watches 
+      SET 
+        WatchTypeID = ?, 
+        Available = ?, 
+        before_price = ?, 
+        after_price = ? 
+      WHERE ProductID = ?`;
+
+    db.query(
+      updateWatchQuery,
+      [WatchTypeID, available, before_price, after_price, productId],
+      (err) => {
+        if (err) {
+          console.error("Error updating watches:", err);
+          return res.status(500).json({ error: err.message });
+        }
+
+        res.status(200).json({ message: "Product updated as Watch." });
+      }
+    );
+  }
+};
+
+
+const updateFragranceVariant = (req, res) => {
+  const { id } = req.params;
+  const { Size, Available, before_price, after_price } = req.body;
+
+  if (
+    !id ||
+    !Size ||
+    !Available ||
+    before_price === undefined ||
+    after_price === undefined
+  ) {
+    return res.status(400).json({ error: "Missing required fields." });
+  }
+
+  if (Available !== "yes" && Available !== "no") {
+    return res
+      .status(400)
+      .json({ error: "Available must be 'yes' or 'no'." });
+  }
+
+  const updateQuery = `
+    UPDATE fragrancevariants 
+    SET 
+      Size = ?, 
+      Available = ?, 
+      before_price = ?, 
+      after_price = ? 
+    WHERE variantFragranceID  = ?`;
+
+  db.query(
+    updateQuery,
+    [Size, Available, before_price, after_price, id],
+    (err) => {
       if (err) {
-        console.error("Error updating watches:", err);
+        console.error("Database update error:", err);
         return res.status(500).json({ error: err.message });
       }
 
-      res.status(200).json({ message: "Product updated as Watch." });
-    });
-  } else {
-    res.status(400).json({ error: "Invalid main product type." });
-  }
+      console.log("Updated fragrance variant:", {
+        id,
+        Size,
+        Available,
+        before_price,
+        after_price,
+      });
+
+      res
+        .status(200)
+        .json({ message: "Fragrance variant updated successfully." });
+    }
+  );
 };
+
+const updateBagVariants = (req, res) => {
+  const { id } = req.params;
+  const { Size, Available, before_price, after_price, color } = req.body;
+
+  if (
+    !id ||
+    !Size ||
+    !Available ||
+    before_price === undefined ||
+    after_price === undefined ||
+    !color
+  ) {
+    return res.status(400).json({ error: "Missing required fields." });
+  }
+
+  if (Available !== "Yes" && Available !== "No") {
+    return res.status(400).json({ error: "Available must be 'Yes' or 'No'." });
+  }
+
+  const updateQuery = `
+    UPDATE bagvariants 
+    SET 
+      Size = ?, 
+      Available = ?, 
+      before_price = ?, 
+      after_price = ?, 
+      color = ? 
+    WHERE VariantID = ?`;
+
+  db.query(
+    updateQuery,
+    [Size, Available, before_price, after_price, color, id],
+    (err) => {
+      if (err) {
+        console.error("Database update error:", err);
+        return res.status(500).json({ error: err.message });
+      }
+
+      console.log("Updated bag variant:", {
+        id,
+        Size,
+        Available,
+        before_price,
+        after_price,
+        color,
+      });
+
+      res.status(200).json({ message: "Bag variant updated successfully." });
+    }
+  );
+};
+
+const deleteFragranceVariants = (req, res) => {
+  console.log("Request params:", req.params);
+  const { variantFragranceID } = req.params;
+  if (!variantFragranceID) {
+    return res.status(400).json({ error: "Missing variantFragranceID." });
+  }
+  const deleteFeedBackQuery =
+    "DELETE FROM feedback WHERE product_id = (SELECT FragranceID FROM fragrancevariants WHERE variantFragranceID = ?)";
+  const deleteFragranceQuery =
+    "DELETE FROM fragrancevariants WHERE variantFragranceID = ?";
+  db.query(deleteFeedBackQuery, [variantFragranceID], (err) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    db.query(deleteFragranceQuery, [variantFragranceID], (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      if (result.affectedRows === 0) {
+        return res
+          .status(404)
+          .json({ message: "Fragrance variant not found." });
+      }
+      res
+        .status(200)
+        .json({ message: "Fragrance variant deleted successfully." });
+    });
+  });
+};
+
+const getFragranceVariantsById = (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: "Missing ID parameter." });
+  }
+  const query = `
+    SELECT * FROM fragrancevariants 
+    WHERE variantFragranceID  = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (results.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No fragrance variants found for this product ID." });
+    }
+
+    res.status(200).json(results);
+  });
+};
+
+const getBagVariantsById = (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: "Missing ID parameter." });
+  }
+
+  const query = `
+    SELECT * FROM bagvariants 
+    WHERE VariantID  = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (results.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No bag variants found for this product ID." });
+    }
+
+    res.status(200).json(results);
+  });
+};
+
+
+const getProductById = (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: "Missing ID parameter." });
+  }
+
+  const productQuery = `
+    SELECT p.*, 
+           w.WatchTypeID AS WatchTypeID, 
+           wt.TypeName AS WatchTypeName, 
+           w.Available	AS Available,  
+           w.before_price AS WatchBeforePrice,
+           w.after_price AS WatchAfterPrice,
+           b.BagTypeID AS BagTypeID, 
+           bt.TypeName AS BagTypeName,
+           bv.VariantID AS BagVariantID,
+           bv.Size AS BagSize,
+           bv.Color AS BagColor,
+           bv.Available AS BagAvailable,
+           bv.before_price AS BagBeforePrice,
+           bv.after_price AS BagAfterPrice,
+           f.FragranceTypeID AS FragranceTypeID,
+           ft.TypeName AS FragranceTypeName,
+           fv.variantFragranceID AS FragranceVariantID,
+           fv.Size AS FragranceSize,
+           fv.Available AS FragranceAvailable,
+           fv.before_price AS FragranceBeforePrice,
+           fv.after_price AS FragranceAfterPrice
+    FROM product p
+    LEFT JOIN watches w ON p.id = w.ProductID
+    LEFT JOIN watchtypes wt ON w.WatchTypeID = wt.WatchTypeID
+    LEFT JOIN bags b ON p.id = b.ProductID
+    LEFT JOIN bagtypes bt ON b.BagTypeID = bt.BagTypeID
+    LEFT JOIN bagvariants bv ON b.BagID = bv.BagID
+    LEFT JOIN fragrances f ON p.id = f.ProductID
+    LEFT JOIN fragrancevariants fv ON f.FragranceID = fv.FragranceID
+    LEFT JOIN fragrancetypes ft ON f.FragranceTypeID = ft.FragranceTypeID
+    WHERE p.id = ?`;
+
+  db.query(productQuery, [id], (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);
+      return res.status(500).json({ error: "Database query error: " + err.message });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "No product found for this ID." });
+    }
+
+    const product = results[0];
+
+    const imagesQuery = `
+      SELECT img,id FROM product_images
+      WHERE ProductID = ?`;
+
+    db.query(imagesQuery, [id], (err, imageResults) => {
+      if (err) {
+        console.error("Database query error (images):", err);
+        return res.status(500).json({ error: "Error fetching images: " + err.message });
+      }
+
+      const images = imageResults.map((image, index) => ({
+        id: image.id,  
+        img: image.img  
+      }));
+
+      const productWithImagesAndType = {
+        ...product,
+        images: images,
+      };
+
+      res.status(200).json(productWithImagesAndType);
+    });
+  });
+};
+
+
+
+
+
+
+
+
+const deleteProductImage = (req, res) => {
+  const { id } = req.params; 
+
+  if (!id) {
+    return res.status(400).json({ error: "Missing Image ID parameter." });
+  }
+
+  const query = `
+    DELETE FROM product_images 
+    WHERE id = ?`; 
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Database query error:", err);  
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ message: "No image found with the given ID." });
+    }
+
+    res.status(200).json({ message: "Image deleted successfully." });
+  });
+};
+
+
+
+
+
 
 const getProductDetails = async (req, res) => {
   const productId = req.params.id;
@@ -497,11 +867,9 @@ const getProductDetails = async (req, res) => {
 
     const product = productResults[0];
 
-    // Query to get product images
     const imagesQuery = `SELECT img FROM product_images WHERE ProductID = ?`;
     const [imageResults] = await db.promise().query(imagesQuery, [productId]);
 
-    // Query to get variants based on the product type
     let variantsQuery = "";
     if (product.main_product_type === "Bag") {
       variantsQuery = `
@@ -520,20 +888,17 @@ const getProductDetails = async (req, res) => {
         WHERE FragranceID = (SELECT FragranceID FROM fragrances WHERE ProductID = ?)`;
     }
 
-    // Execute the variants query if applicable
     let variantResults = [];
     if (variantsQuery) {
       [variantResults] = await db.promise().query(variantsQuery, [productId]);
     }
 
-    // Prepare the response object
     const response = {
       product,
       images: imageResults.map((img) => img.img),
       variants: [],
     };
 
-    // Process variants based on product type
     const sizeMap = {};
     if (variantResults.length > 0) {
       if (product.main_product_type === "Bag") {
@@ -544,7 +909,7 @@ const getProductDetails = async (req, res) => {
                 sizeMap[Size] = { size: Size, prices: [] };
               }
               sizeMap[Size].prices.push({
-                color: Color,
+                Color: Color,
                 before_price,
                 after_price,
               });
@@ -574,7 +939,6 @@ const getProductDetails = async (req, res) => {
       }
     }
 
-    // Transform sizeMap into the desired response format
     response.variants = Object.values(sizeMap).map(({ size, prices }) => ({
       size,
       prices,
@@ -586,6 +950,305 @@ const getProductDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+
+const getProductDetailsDashboard = async (req, res) => {
+  const productId = req.params.id;
+
+  const productQuery = `
+  SELECT 
+    p.*, 
+    b.BagTypeID, 
+    w.WatchTypeID, 
+    f.FragranceTypeID, 
+    ft.TypeName AS FragranceTypeName, 
+    bt.TypeName AS BagTypeName, 
+    wt.TypeName AS WatchTypeName, 
+    br.brand_name AS brand_name
+FROM 
+    product p
+LEFT JOIN 
+    bags b ON p.id = b.ProductID
+LEFT JOIN 
+    watches w ON p.id = w.ProductID
+LEFT JOIN 
+    fragrances f ON p.id = f.ProductID
+LEFT JOIN 
+    fragrancetypes ft ON f.FragranceTypeID = ft.FragranceTypeID 
+LEFT JOIN 
+    bagtypes bt ON bt.BagTypeID = b.BagTypeID 
+LEFT JOIN 
+    watchtypes wt ON wt.WatchTypeID = w.WatchTypeID 
+LEFT JOIN 
+    brands br ON p.brandID = br.id
+WHERE 
+    p.id = ?
+`;
+
+  try {
+    const [productResults] = await db
+      .promise()
+      .query(productQuery, [productId]);
+
+    if (productResults.length === 0) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    const product = productResults[0];
+
+    const imagesQuery = `SELECT img, id FROM product_images WHERE ProductID = ?`;
+    const [imageResults] = await db.promise().query(imagesQuery, [productId]);
+
+
+    const response = {
+      product,
+      images: imageResults.map((img) => ({ id: img.id, img: img.img })), 
+    };
+
+    res.status(200).json(response);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+const getAllProductsWithVariantsCMS = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        p.*,
+        DATE_FORMAT(p.updated_at, '%Y-%m-%d %H:%i:%s') AS updatedDate,  
+        p.product_type AS productType,
+        p.season AS season,
+        p.sale AS sale,  
+        b.BagID AS BagID,
+        bv.Color AS bagColor,
+        bv.Size AS bagSize,  -- إضافة Size هنا
+        bv.before_price AS bagBeforePrice,
+        bv.after_price AS bagAfterPrice,  
+        bv.VariantID AS bagVariantId, 
+        f.FragranceID AS FragranceID,
+        fv.VariantFragranceID AS fragranceVariantId,
+        fv.Size AS fragranceSize,
+        fv.Available AS fragranceAvailable,
+        fv.before_price AS fragranceBeforePrice,
+        fv.after_price AS fragranceAfterPrice,
+        w.WatchID AS watchId,
+        w.Available AS watchAvailable,
+        w.before_price AS watchBeforePrice,
+        w.after_price AS watchAfterPrice,
+        br.brand_name AS brandName
+      FROM 
+        product p
+      LEFT JOIN 
+        bags b ON p.id = b.ProductID
+      LEFT JOIN 
+        bagvariants bv ON b.BagID = bv.BagID 
+      LEFT JOIN 
+        fragrances f ON p.id = f.ProductID
+      LEFT JOIN 
+        fragrancevariants fv ON f.FragranceID = fv.FragranceID
+      LEFT JOIN 
+        watches w ON p.id = w.ProductID
+      LEFT JOIN 
+        brands br ON br.id = p.brandID
+    `;
+
+    const [products] = await db.promise().query(query);
+
+    if (products.length === 0) {
+      return res.status(404).json({ error: "No products found." });
+    }
+
+    const productMap = {};
+
+    products.forEach((product) => {
+      const productId = product.id;
+
+      if (!productMap[productId]) {
+        productMap[productId] = {
+          product: {
+            id: product.id,
+            name: product.name,
+            brand: product.brandName,
+            main_product_type: product.main_product_type,
+            product_type: product.productType,
+            season: product.season,
+            sale: product.sale,
+            updated_at: product.updatedDate,
+            description: product.description,
+            FragranceID: product.FragranceID,
+            BagID: product.BagID,
+          },
+          variants: [],
+        };
+      }
+
+      if (product.main_product_type === "Fragrance" && product.FragranceID) {
+        productMap[productId].variants.push({
+          VariantID: product.fragranceVariantId,
+          Size: product.fragranceSize,
+          Available: product.fragranceAvailable,
+          before_price: product.fragranceBeforePrice,
+          after_price: product.fragranceAfterPrice,
+        });
+      } else if (product.main_product_type === "Bag" && product.BagID) {
+        productMap[productId].variants.push({
+          VariantID: product.bagVariantId,
+          Color: product.bagColor,
+          Size: product.bagSize, 
+          before_price: product.bagBeforePrice,
+          after_price: product.bagAfterPrice,
+        });
+      } else if (product.main_product_type === "Watch" && product.watchId) {
+        productMap[productId].variants.push({
+          Available: product.watchAvailable,
+          before_price: product.watchBeforePrice,
+          after_price: product.watchAfterPrice,
+        });
+      }
+    });
+
+    const response = Object.values(productMap).map((item) => ({
+      product: item.product,
+      variants: item.variants,
+    }));
+
+    return res.status(200).json(response);
+  } catch (err) {
+    console.error("Error fetching products:", err);
+    return res.status(500).json({ error: "An error occurred while fetching products." });
+  }
+};
+
+
+
+
+const getProductByIdWithVariantsCMS = async (req, res) => {
+  try {
+    const { id } = req.params; 
+    const query = `
+      SELECT 
+        p.*,
+        DATE_FORMAT(p.updated_at, '%Y-%m-%d %H:%i:%s') AS updatedDate,  
+        p.product_type AS productType,
+        p.season AS season,
+        p.sale AS sale,  
+        b.BagID AS BagID,
+        bv.Color AS bagColor,
+        bv.Size AS bagSize, 
+        bv.before_price AS bagBeforePrice,
+        bv.after_price AS bagAfterPrice,  
+        bv.VariantID AS bagVariantId, 
+        f.FragranceID AS FragranceID,
+        fv.VariantFragranceID AS fragranceVariantId,
+        fv.Size AS fragranceSize,
+        fv.Available AS fragranceAvailable,
+        fv.before_price AS fragranceBeforePrice,
+        fv.after_price AS fragranceAfterPrice,
+        w.WatchID AS watchId,
+        w.Available AS watchAvailable,
+        w.before_price AS watchBeforePrice,
+        w.after_price AS watchAfterPrice,
+        br.brand_name AS brandName
+      FROM 
+        product p
+      LEFT JOIN 
+        bags b ON p.id = b.ProductID
+      LEFT JOIN 
+        bagvariants bv ON b.BagID = bv.BagID 
+      LEFT JOIN 
+        fragrances f ON p.id = f.ProductID
+      LEFT JOIN 
+        fragrancevariants fv ON f.FragranceID = fv.FragranceID
+      LEFT JOIN 
+        watches w ON p.id = w.ProductID
+      LEFT JOIN 
+        brands br ON br.id = p.brandID
+      WHERE 
+        p.id = ? 
+    `;
+
+    const [products] = await db.promise().query(query, [id]);
+
+    if (products.length === 0) {
+      return res.status(404).json({ error: "No product found with the given ID." });
+    }
+
+    const productMap = {};
+
+    products.forEach((product) => {
+      const productId = product.id;
+
+      if (!productMap[productId]) {
+        productMap[productId] = {
+          product: {
+            id: product.id,
+            name: product.name,
+            brand: product.brandName,
+            main_product_type: product.main_product_type,
+            product_type: product.productType,
+            season: product.season,
+            sale: product.sale,
+            updated_at: product.updatedDate,
+            description: product.description,
+            FragranceID: product.FragranceID,
+            BagID: product.BagID,
+          },
+          variants: [],
+        };
+      }
+
+      if (product.main_product_type === "Fragrance" && product.FragranceID) {
+        productMap[productId].variants.push({
+          VariantID: product.fragranceVariantId,
+          Size: product.fragranceSize,
+          Available: product.fragranceAvailable,
+          before_price: product.fragranceBeforePrice,
+          after_price: product.fragranceAfterPrice,
+        });
+      } else if (product.main_product_type === "Bag" && product.BagID) {
+        productMap[productId].variants.push({
+          VariantID: product.bagVariantId,
+          Color: product.bagColor,
+          Size: product.bagSize,  
+          before_price: product.bagBeforePrice,
+          after_price: product.bagAfterPrice,
+        });
+      } else if (product.main_product_type === "Watch" && product.watchId) {
+        productMap[productId].variants.push({
+          Available: product.watchAvailable,
+          before_price: product.watchBeforePrice,
+          after_price: product.watchAfterPrice,
+        });
+      }
+    });
+
+    const response = Object.values(productMap).map((item) => ({
+      product: item.product,
+      variants: item.variants,
+    }));
+
+    return res.status(200).json(response[0]); 
+  } catch (err) {
+    console.error("Error fetching product:", err);
+    return res.status(500).json({ error: "An error occurred while fetching the product." });
+  } 
+};
+
+
+
+
+
+
+
+
+
+
+
+
 
 const getProducts = (req, res) => {
   const { main_product_type } = req.params;
@@ -622,7 +1285,7 @@ const getProducts = (req, res) => {
         .status(500)
         .json({ error: "An error occurred while fetching products." });
     }
-    console.log(results); 
+    console.log(results);
     if (results.length === 0) {
       return res
         .status(404)
@@ -699,6 +1362,64 @@ const deleteProduct = (req, res) => {
     res.status(200).json({ message: "product deleted successfully" });
   });
 };
+
+const deleteFragranceVariantByFragranceID = (req, res) => {
+  const { variantFragranceID } = req.params;
+
+  if (!variantFragranceID) {
+    return res.status(400).json({ message: "FragranceID is required" });
+  }
+
+  console.log(
+    `Attempting to delete fragrance variants with FragranceID: ${variantFragranceID}`
+  );
+
+  const deleteVariantQuery =
+    "DELETE FROM fragrancevariants WHERE variantFragranceID  = ?";
+
+  db.query(deleteVariantQuery, [variantFragranceID], (err, result) => {
+    if (err) {
+      return res.status(500).json({ message: err.message });
+    }
+
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ message: "No matching fragrance variants found to delete" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Fragrance variants deleted successfully" });
+  });
+};
+
+const deleteBagVariantByVariantID = (req, res) => {
+  const { VariantID } = req.params;
+
+  if (!VariantID) {
+    return res.status(400).json({ message: "VariantID is required" });
+  }
+
+  console.log(`Attempting to delete bag variant with VariantID: ${VariantID}`);
+
+  const deleteVariantQuery = "DELETE FROM bagvariants WHERE VariantID = ?";
+
+  db.query(deleteVariantQuery, [VariantID], (err, result) => {
+    if (err) {
+      return res.status(500).json({ message: err.message });
+    }
+
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ message: "No matching bags variants found to delete" });
+    }
+
+    res.status(200).json({ message: "Bags variants deleted successfully" });
+  });
+};
+
 const getProductBysubType = (req, res) => {
   const { type, subtype } = req.query;
 
@@ -748,7 +1469,6 @@ const getProductBysubType = (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    // Create a map to group results by product
     const productsMap = {};
 
     results.forEach((result) => {
@@ -765,7 +1485,6 @@ const getProductBysubType = (req, res) => {
         first_image,
       } = result;
 
-      // If product doesn't exist in the map, create a new entry
       if (!productsMap[id]) {
         productsMap[id] = {
           id,
@@ -779,7 +1498,6 @@ const getProductBysubType = (req, res) => {
         };
       }
 
-      // Push size details for each product
       productsMap[id].sizes.push({
         Size,
         before_price,
@@ -787,13 +1505,22 @@ const getProductBysubType = (req, res) => {
       });
     });
 
-    // Convert the map to an array of products
     const finalResults = Object.values(productsMap);
     res.json(finalResults);
   });
 };
 
 module.exports = {
+  getAllProductsWithVariantsCMS,
+  getProductDetailsDashboard,
+  getProductByIdWithVariantsCMS,
+  updateFragranceVariant,
+  updateBagVariants,
+  getFragranceVariantsById,
+  getProductById,
+  getBagVariantsById,
+  deleteFragranceVariantByFragranceID,
+  deleteBagVariantByVariantID,
   addProduct,
   getProductDetails,
   getProducts,
@@ -801,4 +1528,5 @@ module.exports = {
   getProductBysubType,
   updateProduct,
   getProductTypes,
+  deleteProductImage
 };
