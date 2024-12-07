@@ -308,7 +308,6 @@ const updateProduct = (req, res) => {
   });
 };
 
-
 const handleProductTypeUpdate = (
   req,
   main_product_type,
