@@ -142,7 +142,7 @@ const getLatestProduct = async (req, res) => {
   LEFT JOIN watches w ON p.id = w.ProductID
   GROUP BY p.id
   ORDER BY p.updated_at DESC
-    LIMIT 15;
+    LIMIT 8;
 `;
   db.query(getLatestProduct, (err, result) => {
     if (err) return res.status(500).json({ error: err.message });

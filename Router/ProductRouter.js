@@ -5,7 +5,7 @@ const BrandController = require("../Controller/BrandController.js");
 const multer = require("../Config/Multer.js");
 
 
-
+// Product routes
 router.post("/add", multer.array("img", 5), ProductController.addProduct);
 router.get("/:id", ProductController.getProductDetails);
 router.get("/bymaintype/:main_product_type", ProductController.getProducts);
@@ -37,18 +37,5 @@ router.get("/get/productbyseason/:season", BrandController.getProductBySeasons);
 router.get("/get/allproducts", BrandController.getAllProducts);
 router.get("/getproductbyid/:id",ProductController.getProductById)
 router.get("/get/latestproducts", BrandController.getLatestProduct);
-router.get("/getproductsubtype/:type", ProductController.getProductBysubType);
-
-
-//variants routes
-router.put('/updateFragranceVariants/:id', ProductController.updateFragranceVariant);
-router.put("/updatebagsvariants/:id",ProductController.updateBagVariants)
-router.get("/getfragrancevariantsbyid/:id",ProductController.getFragranceVariantsById)
-router.get("/getbagsvariansbyid/:id", ProductController.getBagVariantsById)
-router.delete('/deletefragrancevariant/:variantFragranceID', ProductController.deleteFragranceVariantByFragranceID);
-router.delete("/deletebagsvariants/:VariantID", ProductController.deleteBagVariantByVariantID)
-router.delete("/deleteProductImageById/:id", ProductController.deleteProductImage)
-
-
 
 module.exports = router;
