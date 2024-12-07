@@ -18,18 +18,20 @@ const addProduct = (req, res) => {
     season,
     brandID,
     BagTypeID,
-    BagVariants, 
+    BagVariants,
     instock,
     Fragrancevariants,
   } = req.body;
 
   const images = req.files;
-  // Check if the brandID exists
+
+
   checkBrandIDExists(brandID, (err, exists) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!exists) {
       return res.status(400).json({ error: "Invalid brandID." });
     }
+
 
     const productQuery = `
       INSERT INTO product (name, description, sale, main_product_type, product_type, season, brandID, instock)
@@ -51,47 +53,48 @@ const addProduct = (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const lastProductId = result.insertId;
-        console.log(lastProductId)
+
+     
         if (images && images.length > 0) {
           const imageQueries = images.map((image) => {
             return new Promise((resolve, reject) => {
-              const insertImageQuery = `INSERT INTO product_images (ProductID, img) VALUES (?, ?)`;
-              db.query(
-                insertImageQuery,
-                [lastProductId, image.filename],
-                (err) => {
-                  if (err) reject(err);
-                  resolve();
-                }
-              );
+              const insertImageQuery = `
+                INSERT INTO product_images (ProductID, img)
+                VALUES (?, ?)`;
+              db.query(insertImageQuery, [lastProductId, image.filename], (err) => {
+                if (err) reject(err);
+                else resolve();
+              });
             });
           });
 
-        Promise.all(imageQueries)
-          .then(() => {
-            // Now handle the specific product type insertion
-            handleProductTypeInsertion(
-              main_product_type,
-              lastProductId,
-              BagTypeID,
-              BagVariants,
-              res
-            );
-          })
-          .catch((err) => res.status(500).json({ error: err.message }));
-      } else {
-        // If no images were uploaded, just proceed with product type insertion
-        handleProductTypeInsertion(
-          main_product_type,
-          lastProductId,
-          BagTypeID,
-          BagVariants,
-          res
-        );
+          Promise.all(imageQueries)
+            .then(() => {
+        
+              handleProductTypeInsertion(
+                main_product_type,
+                lastProductId,
+                BagTypeID,
+                BagVariants,
+                res
+              );
+            })
+            .catch((err) => res.status(500).json({ error: err.message }));
+        } else {
+          
+          handleProductTypeInsertion(
+            main_product_type,
+            lastProductId,
+            BagTypeID,
+            BagVariants,
+            res
+          );
+        }
       }
-    }
-  );
+    );
+  });
 };
+
 
 const handleProductTypeInsertion = (
   main_product_type,
@@ -923,7 +926,7 @@ const getProducts = (req, res) => {
     WHERE p.main_product_type = ?
     GROUP BY p.id`;
 
-      SELECT 
+      `SELECT 
           p.id, 
           p.name, 
           p.description,
